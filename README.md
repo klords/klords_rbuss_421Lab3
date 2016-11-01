@@ -10,28 +10,3 @@ Usage:
 
 Notes:
 
-// parse header/cookies
-// build list of roles
-// determine user level
-// get target path (routing logic) -- permission check
-// build page (user role, target path)
-    // get articles
-        // list directory
-        // return only .art files
-    // load header ("top of html")
-    // add navigation
-    // load page-specific fragments
-        { -- only applies to landing page
-        // for each article 
-            // make list item/hyperlink
-            // insert into page
-        } (.art file) {
-        // construct body of blog
-            // reading .art json
-            // load fragments 
-        } (auth page) {
-        // load auth fragment
-        }
-    // load footer ("bottom of html")
-    // build response header
-    // send response (res.end?)
