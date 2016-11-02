@@ -99,18 +99,73 @@ class BlogResponder extends EventEmitter {
         this.responseHeader['Content-Type'] = this.getContentType();
     }
 
-    generateResponse() {
-        // if target is landing page
-            // populate queue with [header, article data, footer]
-        // if target is blog (article file)
+    generatePayload() {
+        if (this.target === './index.html') {
+            this.loadQueue.push({name:"header.html", type:"html"});
+            for (let x of this.articleList) {
+                this.loadQueue.push({name:x, type:"article"});
+            }
+            this.loadQueue.push({name:"footer.html", type:"html"});
+            this.loadQueue.reverse();
+            this.processLoadQueue(this.loadQueue.pop());
+        }
+        if (this.target.endsWith('.art')) {
+
+        }
             // if user has access
                 // populate queue with [header, linked article fragments, footer]
             // else
                 // send 403
-        // if target is auth page
-            // populate queue with [header, auth form, footer]
+        if (this.target === './auth/index.html') {
+            this.loadQueue.push({name:"header.html", type:"html"});
+            this.loadQueue.push({name:"authForm.html", type:"html"});
+            this.loadQueue.push({name:"footer.html", type:"html"});
+            this.loadQueue.reverse();
+            this.processLoadQueue(this.loadQueue.pop());
+        }
         // if target is anything else (direct file access)
             // populate queue with [file]
+    }
+
+    processLoadQueue(currentObject) {
+        if (currentObject.type === "html") {
+            this.loadHtmlFile(currentObject.name);
+        } else if (currentObject.type === "article") {
+            this.loadArticle(currentObject);
+        }
+    }
+
+    loadHtmlFile(fileName) {
+        fs.readFile(fileName, (err, data) => {
+            if (err) throw err;
+            this.responseBody.push(data);
+        });
+        if (this.loadQueue.length > 0) {
+            this.processLoadQueue(this.loadQueue.pop());
+        } else {
+            this.emit('payloadLoaded');
+        }
+    }
+
+    loadArticle(article) {
+        fs.readFile(article, 'utf-8', (err, data) => {
+            if (err) throw err;
+            let obj = JSON.parse(data);
+            let title = obj.Title;
+            if (userRole === "visitor") {
+                if (obj.Public === "yes") {
+                    title = "<a href=\'" + article + "\'>" + title + "</a>";
+                }
+            } else if (userRole === "reviewer") {
+                title = "<a href=\'" + article + "\'>" + title + "</a>";
+            }
+            this.responseBody.push(Buffer.from(title)); 
+            if (this.loadQueue.length > 0) {
+                this.processLoadQueue(this.loadQueue.pop());
+            } else {
+                this.emit('payloadLoaded');
+            }
+        });
     }
 
     loadFragment(fragPath) {
