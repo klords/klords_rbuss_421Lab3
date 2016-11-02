@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang='en'>
+    <head>
+        <meta charset='utf8'>
+        <title>SER 421 - Lab 3 - Blog Service</title>
+        <style>
+            html {
+                background-color: #ccc;
+                height: 100%;
+            }
+            body {
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+                font-family: Georgia, serif;
+                margin: auto;
+                width: 100%;
+                background-color: #fff;
+                height: 100%;
+                box-shadow: 0 0 0.75em 0.25em #888;
+            }
+            @media (min-width: 801px) {
+                body {
+                    width: 80%;
+                    min-width: 800px;
+                    max-width: 1200px;
+                }
+            }
+            header {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                min-height: 170px;
+                background: url('../media/header-background.png');
+                background-repeat: no-repeat;
+                background-size: cover;
+            }
+            h2 {
+                text-align: center;
+            }
+            main {
+                min-height: 100px;
+                padding: 0em 1em;
+                overflow: auto;
+            }
+            nav {
+                width: 100%;
+                display: flex;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+                align-content: space-around;
+            }
+            nav a {
+                display: block;
+                height: auto;
+                width: auto;
+                padding: .5em;
+                text-decoration: none;
+                background-color: rgba(0,0,0,0.1);
+                border-radius: .25em;
+                color: black;
+                border: 1px solid black;
+                margin-left: 0.75em;
+            }
+            nav a:last-child {
+                margin-left: auto;
+                margin-right: 0.75em;
+            }
+            nav a:hover {
+                color: #eee;
+                background-color: rgba(0,0,0,0.4);
+            }
+            footer {
+                margin-top: auto;
+                display: flex;
+                justify-content: center;
+                min-height: 100px;
+                background: url('../media/footer-background.png');
+                background-repeat: no-repeat;
+                background-size: cover;
+            }
+            footer div {
+                padding-top: 2.25em;
+                text-align: center;
+                font-size: 0.75em;
+            }
+            form {
+                width: 69%;
+                margin: auto;
+            }
+            form .fieldset {
+                display: flex;
+                justify-content: space-between;
+                padding-top: 0.75em;
+            }
+            form label {
+                width: 5em;
+                display: flex;
+                align-items: center;
+            }
+            form .forminput {
+                flex-basis: 50%;
+                flex-grow: 1;
+                border-radius: 0.25em;
+                padding: 0.25em 0.75em;
+            }
+            form .formfooter {
+                padding-top: 0.75em;
+                width: 100%;
+                display: flex;
+                justify-content: flex-end;
+            }
+            form .formfooter input {
+                border-radius: 0.25em;
+                padding: 0.5em;
+                background-color: #fff;
+                border: 1px solid black;
+                font-family: Georgia, serif;
+                font-size: 1em;
+                background-color: rgba(0,0,0,0.1);
+            }
+            form .formfooter input:hover {
+                color: #eee;
+                background-color: rgba(0,0,0,0.4);
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h2>Le Exquisite Blog Service</h2>
+            <nav>
+                <a href="/">Home</a>
+                [*login_logout*]
+            </nav>
+        </header>
+        <main>
