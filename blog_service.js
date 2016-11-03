@@ -191,10 +191,12 @@ class BlogResponder extends EventEmitter {
 
     generatePayload() {
         let headerPath = './blogs/header.html';
+        let introPath = './blogs/intro.html';
         let footerPath = './blogs/footer.html';
 
         if (this.target === './blogs/landing.html') {
             this.loadQueue.push({name:headerPath, type:"file"});
+            this.loadQueue.push({name:introPath, type:"file"});
             for (let x of this.articleList) {
                 this.loadQueue.push({name:x.name, type:"article"});
             }
