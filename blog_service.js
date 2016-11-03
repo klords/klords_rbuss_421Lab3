@@ -283,9 +283,13 @@ class BlogResponder extends EventEmitter {
             let obj = JSON.parse(data);
             let title = obj.Title;
             if (this.canAccess(obj))
-                title = "<a href=\'" + article + "\'>" + title + "</a>";
+                title = "<div><a href=\'" + article + "\'>" + title + "</a>";
+            else
+            	title = "<div>" + title + "</div>";
             if (this.canDelete(obj))
-                title += "&nbsp;&nbsp;<a href=\'delete?del_name=" + article + "\'>Delete</a>";
+                title += "&nbsp;&nbsp;<a href=\'delete?del_name=" + article + "\'>Delete</a></div>";
+            else
+            	title += "</div>";
             this.responseBody.push(Buffer.from(title)); 
             if (this.loadQueue.length > 0) {
                 this.processLoadQueue(this.loadQueue.pop());
