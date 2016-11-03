@@ -15,6 +15,7 @@ class BlogResponder extends EventEmitter {
         this.req = null;
         this.res = null;
         this.articleList = [];
+        this.fragmentList = [];
         this.userRole = 'visitor';
         this.userName = 'Visitor';
         this.target = '';
@@ -26,7 +27,8 @@ class BlogResponder extends EventEmitter {
     }
 
     initListeners() {
-        this.on('articlesLoaded', this.getRequestTarget);
+        this.on('articlesLoaded', this.getFragments);
+        this.on('fragmentsLoaded', this.getRequestTarget)
         this.on('targetAcquired', this.generatePayload);
         this.on('payloadLoaded', this.generateHeader);
         this.on('responseReady', this.sendResponse);
@@ -44,6 +46,16 @@ class BlogResponder extends EventEmitter {
                 this.loadArticleData(tempArticles);
             } else
                 this.emit('articlesLoaded');
+        });
+    }
+
+    getFragments() {
+    	fs.readdir('./blogs', (err, files) => {
+            if (err) throw err;
+            this.fragmentList = files.filter((name) => {
+                return name.endsWith('frag.html');
+            });
+            this.emit('fragmentsLoaded');
         });
     }
 
@@ -215,13 +227,12 @@ class BlogResponder extends EventEmitter {
                 this.sendError(403);
                 return;
             }
-        } else if ((this.target === './blogs/auth.html') || (this.target === './blogs/createArticle.html')) {
+        } else if ((this.target === './blogs/auth.html') || (this.target === './blogs/createArticle.html'))  {
             this.loadQueue.push({name:headerPath, type:"file"});
             this.loadQueue.push({name:this.target, type:"file"});
             this.loadQueue.push({name:footerPath, type:"file"});
-        } else {
+        } else
             this.loadQueue.push({name:this.target, type:"file"});
-        }
         this.loadQueue.reverse();
         this.processLoadQueue(this.loadQueue.pop());
     }
