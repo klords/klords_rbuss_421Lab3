@@ -16,6 +16,7 @@ class BlogResponder extends EventEmitter {
         this.res = null;
         this.articleList = [];
         this.userRole = 'visitor';
+        this.userName = 'Visitor';
         this.target = '';
         this.statusCode = 200;
         this.responseHeader = {};
@@ -79,25 +80,33 @@ class BlogResponder extends EventEmitter {
             });
         }
 
-        this.userRole = this.getUserRole();
+        this.parseRequestCookie();
 
         // do first async task
         this.getArticles();
     }
 
-    getUserRole() {
-        if (!this.req.headers.cookie)
-            return 'visitor';
-        let cookieList = this.req.headers.cookie.split(';');
+    parseRequestCookie() {
+    	if (!this.req.headers.cookie) {
+    		this.userRole = 'visitor';
+    		this.userName = 'Visitor';
+    		return;
+		}
+		let cookieList = this.req.headers.cookie.split(';');
         let cookies = {};
         for (let cookie of cookieList) {
-            let cookieVals = cookie.split('=');
+            let cookieVals = cookie.trim().split('=');
             cookies[cookieVals[0]] = cookieVals[1];
         }
         if (cookies.Role)
-            return cookies.Role;
-        return 'visitor';
-    } 
+        	this.userRole = cookies.Role;
+        else
+        	this.userRole = 'visitor';
+        if (cookies.UserName)
+        	this.userName = cookies.UserName;
+        else
+        	this.userName = 'Visitor';
+    }
 
     getContentType() {
         let target = this.target.toLowerCase();
@@ -125,6 +134,7 @@ class BlogResponder extends EventEmitter {
             case './auth':
                 if (queryObj  && queryObj.username == queryObj.password) {
                     this.userRole = 'reviewer';
+                    this.userName = queryObj.username;
                     target = './blogs/landing.html';
                 } else {
                     target = './blogs/auth.html';
@@ -132,6 +142,7 @@ class BlogResponder extends EventEmitter {
                 break;
             case './quit':
                 this.userRole = 'visitor';
+                this.userName = 'Visitor';
                 this.statusCode = 302;
                 this.responseHeader = {
                     'Location': './blogs/landing.html'
@@ -148,7 +159,9 @@ class BlogResponder extends EventEmitter {
         // set user cookie
         let expireDate = new Date();
         expireDate.setDate(expireDate.getDate() + 7); // 1 week expiration
-        this.responseHeader['Set-Cookie'] = [`Role=${this.userRole}; Expires=${expireDate.toUTCString()}; Path=/; HttpOnly;`];
+        this.responseHeader['Set-Cookie'] = [];
+        this.responseHeader['Set-Cookie'].push(`Role=${this.userRole}; Expires=${expireDate.toUTCString()}; Path=/; HttpOnly;`);
+        this.responseHeader['Set-Cookie'].push(`UserName=${this.userName}; Expires=${expireDate.toUTCString()}; Path=/; HttpOnly;`);
 
         // set content type
         this.responseHeader['Content-Type'] = this.getContentType();
@@ -215,6 +228,15 @@ class BlogResponder extends EventEmitter {
                 newAnchor += "</a>";
                 tempStr = tempStr.replace('[*login_logout*]', newAnchor);
                 data = Buffer.from(tempStr);
+            }
+            if (tempStr.includes('[*user_status*]')) {
+            	let newUserStatus = "";
+            	if (this.userRole === 'visitor')
+            		newUserStatus = "Welcome, Visitor!";
+            	else
+            		newUserStatus = `Hello, ${this.userName}! You are logged in as ${this.userRole}.`;
+            	tempStr = tempStr.replace('[*user_status*]', newUserStatus);
+            	data = Buffer.from(tempStr);	
             }
             this.responseBody.push(data);
             if (this.loadQueue.length > 0) {
