@@ -139,6 +139,9 @@ class BlogResponder extends EventEmitter {
                     target = './blogs/auth.html';
                 }
                 break;
+            case './createArticle':
+            	target = './blogs/createArticle.html';
+            	break;
             case './quit':
                 this.userRole = 'visitor';
                 this.userName = 'Visitor';
@@ -210,7 +213,7 @@ class BlogResponder extends EventEmitter {
                 this.sendError(403);
                 return;
             }
-        } else if (this.target === './blogs/auth.html') {
+        } else if ((this.target === './blogs/auth.html') || (this.target === './blogs/createArticle.html')) {
             this.loadQueue.push({name:headerPath, type:"file"});
             this.loadQueue.push({name:this.target, type:"file"});
             this.loadQueue.push({name:footerPath, type:"file"});
@@ -244,6 +247,13 @@ class BlogResponder extends EventEmitter {
                     newAnchor += "quit'>Quit";
                 newAnchor += "</a>";
                 tempStr = tempStr.replace('[*login_logout*]', newAnchor);
+                data = Buffer.from(tempStr);
+            }
+			if (tempStr.includes('[*create_article*]')) {
+            	let newAnchor = "";
+            	if (this.userRole === 'author')
+            		newAnchor = "<a href='/createArticle'>Create Article</a>";
+                tempStr = tempStr.replace('[*create_article*]', newAnchor);
                 data = Buffer.from(tempStr);
             }
             if (tempStr.includes('[*user_status*]')) {
