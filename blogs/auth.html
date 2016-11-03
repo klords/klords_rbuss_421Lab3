@@ -1,5 +1,19 @@
 <form method="POST">
-    <div class="fieldset"><label for="username">Name:</label><input class="forminput" type="text" name="username" id="username" placeholder="Enter username here"></div>
-    <div class="fieldset"><label for="password">Password:</label><input class="forminput" type="password" name="password" id="password" placeholder="Enter password here"></div>
+    <div class="fieldset">
+        <label for="username">Name:</label>
+        <input class="forminput" type="text" name="username" id="username" placeholder="Enter username here" required autofocus>
+    </div>
+    <div class="fieldset">
+        <label for="password">Password:</label>
+        <input class="forminput" type="password" name="password" id="password" placeholder="Enter password here" required>
+    </div>
+    <div class="fieldset">
+        <label for="role">Role:</label>
+        <input class="forminput" type="text" name="role" id="role" placeholder="Select a role" list="roles" required>
+        <datalist id="roles">
+            <option value="Reviewer">
+            <option value="Author">
+        </datalist>
+    </div>
     <div class="formfooter"><input type="submit" value="Submit"></div>
 </form>

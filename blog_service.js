@@ -87,11 +87,10 @@ class BlogResponder extends EventEmitter {
     }
 
     parseRequestCookie() {
-    	if (!this.req.headers.cookie) {
-    		this.userRole = 'visitor';
-    		this.userName = 'Visitor';
+        this.userRole = 'visitor';
+    	this.userName = 'Visitor';
+    	if (!this.req.headers.cookie)
     		return;
-		}
 		let cookieList = this.req.headers.cookie.split(';');
         let cookies = {};
         for (let cookie of cookieList) {
@@ -100,12 +99,8 @@ class BlogResponder extends EventEmitter {
         }
         if (cookies.Role)
         	this.userRole = cookies.Role;
-        else
-        	this.userRole = 'visitor';
         if (cookies.UserName)
         	this.userName = cookies.UserName;
-        else
-        	this.userName = 'Visitor';
     }
 
     getContentType() {
@@ -117,13 +112,17 @@ class BlogResponder extends EventEmitter {
 
     getRequestTarget() {
         // routing and authentication logic
+        let validRoles = ['reviewer', 'author'];
         let targetObj = url.parse(this.req.url);
         let queryObj = null;
+
         if (targetObj.query) {
             queryObj = qstring.parse(targetObj.query);
         } else if (this.req.requestData) {
             queryObj = qstring.parse(this.req.requestData);
         }
+
+        let newRole = queryObj ? queryObj.role.toLowerCase() : '';
         let target = `.${targetObj.href}`;
         target = target.replace(/\.\./g, ''); // no directory traversal
 
@@ -132,8 +131,8 @@ class BlogResponder extends EventEmitter {
                 target = './blogs/landing.html';
                 break;
             case './auth':
-                if (queryObj  && queryObj.username == queryObj.password) {
-                    this.userRole = 'reviewer';
+                if (queryObj  && queryObj.username == queryObj.password && validRoles.includes(newRole)) {
+                    this.userRole = newRole;
                     this.userName = queryObj.username;
                     target = './blogs/landing.html';
                 } else {
@@ -153,6 +152,24 @@ class BlogResponder extends EventEmitter {
 
         this.target = target;
         this.emit('targetAcquired');
+    }
+
+    canAccess(articleObj) {
+        if (this.userRole === 'reviewer')
+            return true;
+        if (articleObj.Public === 'yes')
+            return true;
+        if (this.userRole === 'author' && articleObj.Author === this.userName)
+            return true;
+        return false;
+    }
+
+    canDelete(articleObj) {
+        if (this.userRole === 'author' && 
+            articleObj.Author === this.userName &&
+            articleObj.Public === 'yes')
+            return true;
+        return false;
     }
 
     generateHeader() {
@@ -183,7 +200,7 @@ class BlogResponder extends EventEmitter {
             let targetArticle = this.articleList.filter((article) => {
                 return this.target.endsWith(article.name);
             })[0];
-            if ((this.userRole === 'visitor' && targetArticle.Public === 'yes') || (this.userRole === 'reviewer')) {
+            if (this.canAccess(targetArticle)) {
                 this.loadQueue.push({name:headerPath, type:"file"});
                 for (let fragment of targetArticle.Fragments) {
                     this.loadQueue.push({name:`./blogs/${fragment}`, type:"file"});
@@ -255,11 +272,10 @@ class BlogResponder extends EventEmitter {
             }
             let obj = JSON.parse(data);
             let title = obj.Title;
-            if (this.userRole === "visitor" && obj.Public === "yes") {
+            if (this.canAccess(obj))
                 title = "<a href=\'" + article + "\'>" + title + "</a>";
-            } else if (this.userRole === "reviewer") {
-                title = "<a href=\'" + article + "\'>" + title + "</a>";
-            }
+            if (this.canDelete(obj))
+                title += "&nbsp;&nbsp;<a href=\'delete?del_name=" + article + "\'>Delete</a>";
             this.responseBody.push(Buffer.from(title)); 
             if (this.loadQueue.length > 0) {
                 this.processLoadQueue(this.loadQueue.pop());
