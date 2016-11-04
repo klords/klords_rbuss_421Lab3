@@ -22,16 +22,24 @@ class BlogResponder extends EventEmitter {
         this.statusCode = 200;
         this.responseHeader = {};
         this.responseBody = [];
+        this.errorMessage = '';
         this.loadQueue = [];
+        this.routeMap = {};
         this.initListeners();
+        this.initRouteMap();
     }
 
     initListeners() {
-        this.on('articlesLoaded', this.getFragments);
-        this.on('fragmentsLoaded', this.getRequestTarget)
-        this.on('targetAcquired', this.generatePayload);
-        this.on('payloadLoaded', this.generateHeader);
-        this.on('responseReady', this.sendResponse);
+        this.on('articlesLoaded',   this.getRequestTarget);
+        this.on('targetAcquired',   this.generatePayload);
+        this.on('payloadLoaded',    this.generateHeader);
+        this.on('responseReady',    this.sendResponse);
+    }
+
+    initRouteMap() {
+        this.routeMap['./auth']             = './blogs/auth.html';
+        this.routeMap['./createArticle']    = './blogs/createArticle.html';
+        this.routeMap['./createFragment']   = './blogs/createFragment.html';
     }
 
     getArticles() {
@@ -134,32 +142,56 @@ class BlogResponder extends EventEmitter {
             queryObj = qstring.parse(this.req.requestData);
         }
 
-        let newRole = queryObj ? queryObj.role.toLowerCase() : '';
+        let newRole = '';
+        if (queryObj && queryObj.role) {
+             newRole = queryObj.role.toLowerCase();
+        }
+
         let target = `.${targetObj.href}`;
         target = target.replace(/\.\./g, ''); // no directory traversal
 
         switch (target) {
             case './':
-                target = './blogs/landing.html';
+                target += 'landing';
                 break;
             case './auth':
                 if (queryObj  && queryObj.username == queryObj.password && validRoles.includes(newRole)) {
                     this.userRole = newRole;
                     this.userName = queryObj.username;
-                    target = './blogs/landing.html';
-                } else {
-                    target = './blogs/auth.html';
+                    this.statusCode = 302;
+                    this.responseHeader = {
+                        'Location': '/'
+                    };
+                    this.emit('payloadLoaded');
+                    return;
                 }
                 break;
-            case './createArticle':
-            	target = './blogs/createArticle.html';
-            	break;
+            case './createFragment':
+                if (queryObj) {
+                    let writeOptions = {flag: 'wx'};
+                    fs.writeFile(`./blogs/${queryObj.fragName}.frag.html`, queryObj.fragContent, writeOptions, (err) => {
+                        if (err) {
+                            this.target = './createFragment';
+                            this.errorMessage = 'A fragment with that name already exists!';
+                            this.emit('targetAcquired');
+                            return;
+                        }
+                        this.statusCode = 302;
+                        this.responseHeader = {
+                            'Location': '/'
+                        };
+                        this.emit('payloadLoaded');
+                        return;
+                    });
+                    return;
+                }
+                break;
             case './quit':
                 this.userRole = 'visitor';
                 this.userName = 'Visitor';
                 this.statusCode = 302;
                 this.responseHeader = {
-                    'Location': './blogs/landing.html'
+                    'Location': '/'
                 };
                 this.emit('payloadLoaded');
                 return;
@@ -188,7 +220,7 @@ class BlogResponder extends EventEmitter {
     }
 
     generateHeader() {
-        // set user cookie
+        // set user cookies
         let expireDate = new Date();
         expireDate.setDate(expireDate.getDate() + 7); // 1 week expiration
         this.responseHeader['Set-Cookie'] = [];
@@ -202,11 +234,11 @@ class BlogResponder extends EventEmitter {
     }
 
     generatePayload() {
-        let headerPath = './blogs/header.html';
-        let introPath = './blogs/intro.html';
-        let footerPath = './blogs/footer.html';
+        let headerPath  = './blogs/header.html';
+        let introPath   = './blogs/intro.html';
+        let footerPath  = './blogs/footer.html';
 
-        if (this.target === './blogs/landing.html') {
+        if (this.target === './landing') {
             this.loadQueue.push({name:headerPath, type:"file"});
             this.loadQueue.push({name:introPath, type:"file"});
             for (let x of this.articleList) {
@@ -227,9 +259,9 @@ class BlogResponder extends EventEmitter {
                 this.sendError(403);
                 return;
             }
-        } else if ((this.target === './blogs/auth.html') || (this.target === './blogs/createArticle.html'))  {
+        } else if (Object.keys(this.routeMap).includes(this.target)) {
             this.loadQueue.push({name:headerPath, type:"file"});
-            this.loadQueue.push({name:this.target, type:"file"});
+            this.loadQueue.push({name:this.routeMap[this.target], type:"file"});
             this.loadQueue.push({name:footerPath, type:"file"});
         } else
             this.loadQueue.push({name:this.target, type:"file"});
@@ -276,6 +308,21 @@ class BlogResponder extends EventEmitter {
             	else
             		newUserStatus = `Hello, ${this.userName}! You are logged in as ${this.userRole}.`;
             	tempStr = tempStr.replace('[*user_status*]', newUserStatus);
+            	data = Buffer.from(tempStr);	
+            }
+            if (tempStr.includes('[*create_fragment*]')) {
+                let newAnchor = '';
+                if (this.userRole === 'author' && 
+                    this.target === './landing')
+                    newAnchor = "<a href='/createFragment'>Create New Fragment</a>";
+                tempStr = tempStr.replace('[*create_fragment*]', newAnchor);
+                data = Buffer.from(tempStr);
+            }
+            if (tempStr.includes('[*error_message*]')) {
+                let newError = this.errorMessage;
+                if (newError !== '')
+                    newError = `<div class="error">${this.errorMessage}</div>`;
+            	tempStr = tempStr.replace('[*error_message*]', newError);
             	data = Buffer.from(tempStr);	
             }
             this.responseBody.push(data);

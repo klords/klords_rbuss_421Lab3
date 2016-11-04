@@ -9,11 +9,11 @@
     </div>
     <div class="fieldset">
         <label for="role">Role:</label>
-        <input class="forminput" type="text" name="role" id="role" placeholder="Select a role" list="roles" required>
-        <datalist id="roles">
-            <option value="Reviewer">
-            <option value="Author">
-        </datalist>
+        <select class="forminput" name="role" id="role" placeholder="Select a role" required>
+            <option value="">Select a role...</option>
+            <option value="Reviewer">Reviewer</option>
+            <option value="Author">Author</option>
+        </select>
     </div>
     <div class="formfooter"><input type="submit" value="Submit"></div>
 </form>
