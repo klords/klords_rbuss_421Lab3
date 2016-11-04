@@ -1,4 +1,9 @@
 <form method="POST">
-    <div class="fieldset"><label for="title">Title:</label><input class="forminput" type="text" name="title" id="title" placeholder="Enter title here"></div>
+    <div class="fieldset"><label for="title">Title:</label><input class="forminput" type="text" name="title" id="title" placeholder="Enter title here"></div><br>
+    <div>Select the article fragments you want to include in your new article:</div><br>
+    [*fragment_list*]<br>
+    <div>Select if you want the article to be public or private:</div><br>
+  	<input type="radio" name="pubpriv" value="yes"> Public<br>
+  	<input type="radio" name="pubpriv" value="no"> Private<br>
     <div class="formfooter"><input type="submit" value="Submit"></div>
 </form>

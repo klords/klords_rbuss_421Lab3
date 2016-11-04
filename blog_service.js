@@ -141,12 +141,10 @@ class BlogResponder extends EventEmitter {
         } else if (this.req.requestData) {
             queryObj = qstring.parse(this.req.requestData);
         }
-
         let newRole = '';
         if (queryObj && queryObj.role) {
              newRole = queryObj.role.toLowerCase();
         }
-
         let target = `.${targetObj.href}`;
         target = target.replace(/\.\./g, ''); // no directory traversal
 
@@ -186,6 +184,19 @@ class BlogResponder extends EventEmitter {
                     return;
                 }
                 break;
+            case './createArticle':
+            	if (queryObj) {
+            		this.createArticle(queryObj);
+            		this.statusCode = 302;
+                	this.responseHeader = {
+                    	'Location': './blogs/landing.html'
+                	};
+               		this.emit('payloadLoaded');
+                	return;
+            	}
+            	else
+            		target = './blogs/createArticle.html';
+            	break;
             case './quit':
                 this.userRole = 'visitor';
                 this.userName = 'Visitor';
@@ -199,6 +210,18 @@ class BlogResponder extends EventEmitter {
 
         this.target = target;
         this.emit('targetAcquired');
+    }
+
+    createArticle(queryObj) {
+    	let newArticleData = "{\"Title\":\"" + queryObj.title + "\",\"Author\":\"" + this.userName + "\",\"Public\":\"" + queryObj.pubpriv + "\",\"Fragments\":[";
+    	for (let x = 0; x < queryObj.frag.length; x++)  {
+    		if (x == queryObj.frag.length - 1)
+    			newArticleData += "\"" + queryObj.frag[x] + "\"";
+    		else
+    			newArticleData += "\"" + queryObj.frag[x] + "\",";
+    	}
+    	newArticleData += "]}";
+    	console.log(newArticleData);
     }
 
     canAccess(articleObj) {
@@ -323,7 +346,15 @@ class BlogResponder extends EventEmitter {
                 if (newError !== '')
                     newError = `<div class="error">${this.errorMessage}</div>`;
             	tempStr = tempStr.replace('[*error_message*]', newError);
-            	data = Buffer.from(tempStr);	
+            	data = Buffer.from(tempStr);
+            }
+            if (tempStr.includes('[*fragment_list*]')) {
+            	let newFragList = "";
+            	for (let x of this.fragmentList) {
+            		newFragList += "<div class=\"checkbox\"><input type=\"checkbox\" name=\"frag\" value=\"" + x + "\"> " + x.split(".")[0] + "</div>";
+            	}
+            	tempStr = tempStr.replace('[*fragment_list*]', newFragList);
+            	data = Buffer.from(tempStr);
             }
             this.responseBody.push(data);
             if (this.loadQueue.length > 0) {
