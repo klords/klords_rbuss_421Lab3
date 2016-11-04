@@ -30,7 +30,8 @@ class BlogResponder extends EventEmitter {
     }
 
     initListeners() {
-        this.on('articlesLoaded',   this.getRequestTarget);
+        this.on('articlesLoaded',   this.getFragments);
+        this.on('fragmentsLoaded',	this.getRequestTarget);
         this.on('targetAcquired',   this.generatePayload);
         this.on('payloadLoaded',    this.generateHeader);
         this.on('responseReady',    this.sendResponse);
@@ -141,12 +142,10 @@ class BlogResponder extends EventEmitter {
         } else if (this.req.requestData) {
             queryObj = qstring.parse(this.req.requestData);
         }
-
         let newRole = '';
         if (queryObj && queryObj.role) {
              newRole = queryObj.role.toLowerCase();
         }
-
         let target = `.${targetObj.href}`;
         target = target.replace(/\.\./g, ''); // no directory traversal
 
@@ -186,6 +185,27 @@ class BlogResponder extends EventEmitter {
                     return;
                 }
                 break;
+            case './createArticle':
+            	if (queryObj) {
+            		let data = this.createArticle(queryObj);
+            		let writeOptions = {flag: 'wx'};
+                    fs.writeFile(`./${queryObj.title}.art`, data, writeOptions, (err) => {
+                        if (err) {
+                            this.target = './createArticle';
+                            this.errorMessage = 'An article with that name already exists!';
+                            this.emit('targetAcquired');
+                            return;
+                        }
+                        this.statusCode = 302;
+                        this.responseHeader = {
+                            'Location': '/'
+                        };
+                        this.emit('payloadLoaded');
+                        return;
+                    });
+                    return;
+                }
+            	break;
             case './quit':
                 this.userRole = 'visitor';
                 this.userName = 'Visitor';
@@ -199,6 +219,18 @@ class BlogResponder extends EventEmitter {
 
         this.target = target;
         this.emit('targetAcquired');
+    }
+
+    createArticle(queryObj) {
+    	let newArticleData = "{\"Title\":\"" + queryObj.title + "\",\"Author\":\"" + this.userName + "\",\"Public\":\"" + queryObj.pubpriv + "\",\"Fragments\":[";
+    	for (let x = 0; x < queryObj.frag.length; x++)  {
+    		if (x == queryObj.frag.length - 1)
+    			newArticleData += "\"" + queryObj.frag[x] + "\"";
+    		else
+    			newArticleData += "\"" + queryObj.frag[x] + "\",";
+    	}
+    	newArticleData += "]}";
+    	return newArticleData;
     }
 
     canAccess(articleObj) {
@@ -323,7 +355,15 @@ class BlogResponder extends EventEmitter {
                 if (newError !== '')
                     newError = `<div class="error">${this.errorMessage}</div>`;
             	tempStr = tempStr.replace('[*error_message*]', newError);
-            	data = Buffer.from(tempStr);	
+            	data = Buffer.from(tempStr);
+            }
+            if (tempStr.includes('[*fragment_list*]')) {
+            	let newFragList = "";
+            	for (let x of this.fragmentList) {
+            		newFragList += "<div class=\"checkbox\"><input type=\"checkbox\" name=\"frag\" value=\"" + x + "\"> " + x.split(".")[0] + "</div>";
+            	}
+            	tempStr = tempStr.replace('[*fragment_list*]', newFragList);
+            	data = Buffer.from(tempStr);
             }
             this.responseBody.push(data);
             if (this.loadQueue.length > 0) {
