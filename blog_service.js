@@ -30,7 +30,8 @@ class BlogResponder extends EventEmitter {
     }
 
     initListeners() {
-        this.on('articlesLoaded',   this.getRequestTarget);
+        this.on('articlesLoaded',   this.getFragments);
+        this.on('fragmentsLoaded',	this.getRequestTarget);
         this.on('targetAcquired',   this.generatePayload);
         this.on('payloadLoaded',    this.generateHeader);
         this.on('responseReady',    this.sendResponse);
@@ -186,16 +187,24 @@ class BlogResponder extends EventEmitter {
                 break;
             case './createArticle':
             	if (queryObj) {
-            		this.createArticle(queryObj);
-            		this.statusCode = 302;
-                	this.responseHeader = {
-                    	'Location': './blogs/landing.html'
-                	};
-               		this.emit('payloadLoaded');
-                	return;
-            	}
-            	else
-            		target = './blogs/createArticle.html';
+            		let data = this.createArticle(queryObj);
+            		let writeOptions = {flag: 'wx'};
+                    fs.writeFile(`./${queryObj.title}.art`, data, writeOptions, (err) => {
+                        if (err) {
+                            this.target = './createArticle';
+                            this.errorMessage = 'An article with that name already exists!';
+                            this.emit('targetAcquired');
+                            return;
+                        }
+                        this.statusCode = 302;
+                        this.responseHeader = {
+                            'Location': '/'
+                        };
+                        this.emit('payloadLoaded');
+                        return;
+                    });
+                    return;
+                }
             	break;
             case './quit':
                 this.userRole = 'visitor';
@@ -221,7 +230,7 @@ class BlogResponder extends EventEmitter {
     			newArticleData += "\"" + queryObj.frag[x] + "\",";
     	}
     	newArticleData += "]}";
-    	console.log(newArticleData);
+    	return newArticleData;
     }
 
     canAccess(articleObj) {
